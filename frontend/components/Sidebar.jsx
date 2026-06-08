@@ -18,8 +18,23 @@ export default function Sidebar({ algorithms, activeId }) {
         <div className="text-[10px] mt-0.5" style={{ color: 'var(--sidebar-muted)' }}>十大機器學習演算法</div>
       </div>
 
+      {/* Home button */}
+      <div className="px-2 pt-2">
+        <Link
+          href="/"
+          className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs transition-colors w-full"
+          style={{
+            background: activeId === null ? 'var(--sidebar-hover)' : 'transparent',
+            color: activeId === null ? 'var(--text)' : 'var(--sidebar-muted)',
+          }}
+        >
+          <span className="flex-shrink-0 text-base leading-none">⌂</span>
+          <span className="font-medium text-[11px]">首頁總覽</span>
+        </Link>
+      </div>
+
       {/* Algorithm list */}
-      <nav className="flex-1 overflow-y-auto px-2 pt-2 pb-2 space-y-0.5">
+      <nav className="flex-1 overflow-y-auto px-2 pt-1 pb-2 space-y-0.5">
         {algorithms.map((a) => {
           const c = COLORS[a.color] || COLORS.blue;
           const on = activeId === a.id;

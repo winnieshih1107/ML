@@ -57,6 +57,8 @@ def draw_boundary(result):
     if result is None:
         return None
 
+    from matplotlib.colors import ListedColormap
+
     fig, ax = plt.subplots(figsize=(7, 4.5))
     fig.patch.set_facecolor("#13151f")
     ax.set_facecolor("#13151f")
@@ -68,22 +70,23 @@ def draw_boundary(result):
     xmin, xmax = grid.get("xRange", [-4, 4])
     ymin, ymax = grid.get("yRange", [-2.5, 2.5])
 
-    # Draw grid background (decision region)
+    # Draw decision region (RGBA tuples, values 0-1)
     gdata = grid.get("data", [])
     if gdata:
         w, h = grid["w"], grid["h"]
         img = np.array(gdata, dtype=float).reshape(h, w)
-        cmap = plt.matplotlib.colors.ListedColormap(
-            ["rgba(239,68,68,0.35)", "rgba(96,165,250,0.35)"])
+        cmap = ListedColormap([
+            (0.937, 0.267, 0.267, 0.35),   # red  — class 0
+            (0.376, 0.647, 0.980, 0.35),   # blue — class 1
+        ])
         ax.imshow(img, origin="lower", extent=[xmin, xmax, ymin, ymax],
-                  aspect="auto", cmap=cmap, vmin=0, vmax=1, alpha=0.55)
+                  aspect="auto", cmap=cmap, vmin=0, vmax=1)
 
-    # Draw data points
+    # Data points
     xs0 = [p["x"] for p in points if p["label"] == 0]
     ys0 = [p["y"] for p in points if p["label"] == 0]
     xs1 = [p["x"] for p in points if p["label"] == 1]
     ys1 = [p["y"] for p in points if p["label"] == 1]
-
     ax.scatter(xs0, ys0, c="#ef4444", s=22, edgecolors="white", linewidths=0.5,
                label="類別 0", zorder=3)
     ax.scatter(xs1, ys1, c="#60a5fa", s=22, edgecolors="white", linewidths=0.5,
@@ -98,10 +101,11 @@ def draw_boundary(result):
 
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
-    ax.tick_params(colors="rgba(150,155,170,0.7)", labelsize=8)
+    # Use hex with alpha (#rrggbbaa) — supported by matplotlib
+    ax.tick_params(colors="#969baa", labelsize=8)
     for spine in ax.spines.values():
-        spine.set_edgecolor("rgba(80,80,100,0.4)")
-    ax.grid(color="rgba(128,128,128,0.12)", linewidth=0.5)
+        spine.set_edgecolor((0.31, 0.31, 0.39, 0.4))
+    ax.grid(color=(0.5, 0.5, 0.5, 0.15), linewidth=0.5)
     ax.legend(fontsize=8, facecolor="#1e2030", edgecolor="#333",
               labelcolor="white", loc="upper right")
     fig.tight_layout(pad=0.5)

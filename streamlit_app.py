@@ -29,7 +29,11 @@ ALGORITHMS = data.ALGORITHMS
 
 # ── Session state ─────────────────────────────────────────────────────────────
 if "algo_id" not in st.session_state:
-    st.session_state.algo_id = None   # None = home page
+    st.session_state.algo_id = None   # None = home page, "chat" = AI assistant
+if "chat_messages" not in st.session_state:
+    st.session_state.chat_messages = [
+        {"role": "assistant", "content": "你好！我是 ML 平台 AI 助教，有任何關於機器學習的問題都可以問我 😊"}
+    ]
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
@@ -40,6 +44,11 @@ with st.sidebar:
     if st.button("⌂  首頁總覽", use_container_width=True,
                  type="primary" if st.session_state.algo_id is None else "secondary"):
         st.session_state.algo_id = None
+        st.rerun()
+
+    if st.button("🤖  AI 助教", use_container_width=True,
+                 type="primary" if st.session_state.algo_id == "chat" else "secondary"):
+        st.session_state.algo_id = "chat"
         st.rerun()
 
     st.markdown("**演算法列表**")
@@ -360,8 +369,71 @@ def page_algorithm(algo_id: int):
                             unsafe_allow_html=True)
 
 
+# ── AI Chat page ──────────────────────────────────────────────────────────────
+_CHAT_SYSTEM = """你是「十大機器學習演算法」學習平台的 AI 助教。本平台涵蓋以下十種演算法：
+線性迴歸、邏輯迴歸、決策樹、隨機森林、支援向量機 (SVM)、K-近鄰演算法 (KNN)、K-Means 分群、主成分分析 (PCA)、梯度提升 (Gradient Boosting / XGBoost)、神經網路。
+
+你的職責：
+- 用繁體中文回答機器學習相關問題，解釋原理、優缺點與使用場景。
+- 回答簡潔清晰，適合初學者至中階學習者。
+- 若問題與機器學習無關，請友善地引導回 ML 主題。"""
+
+
+def page_chat():
+    st.title("🤖 AI 助教")
+    st.caption("有任何關於機器學習的問題，都可以在這裡詢問")
+
+    gemini_key = None
+    try:
+        gemini_key = st.secrets.get("GEMINI_API_KEY")
+    except Exception:
+        pass
+    if not gemini_key:
+        gemini_key = os.environ.get("GEMINI_API_KEY")
+
+    if not gemini_key:
+        st.warning("⚠️ 請在 Streamlit Cloud → Settings → Secrets 加入 `GEMINI_API_KEY` 以啟用 AI 助教。")
+        return
+
+    from google import genai as _genai
+
+    for msg in st.session_state.chat_messages:
+        with st.chat_message(msg["role"]):
+            st.write(msg["content"])
+
+    if prompt := st.chat_input("輸入問題，例如：隨機森林和決策樹有什麼差異？"):
+        st.session_state.chat_messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.write(prompt)
+
+        with st.chat_message("assistant"):
+            with st.spinner("思考中..."):
+                try:
+                    client = _genai.Client(api_key=gemini_key)
+                    contents = []
+                    for m in st.session_state.chat_messages:
+                        if m["role"] == "assistant" and m == st.session_state.chat_messages[0]:
+                            continue
+                        contents.append({
+                            "role": "user" if m["role"] == "user" else "model",
+                            "parts": [{"text": m["content"]}],
+                        })
+                    response = client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=contents,
+                        config={"system_instruction": _CHAT_SYSTEM},
+                    )
+                    reply = response.text
+                except Exception as e:
+                    reply = f"⚠️ 發生錯誤：{e}"
+                st.write(reply)
+                st.session_state.chat_messages.append({"role": "assistant", "content": reply})
+
+
 # ── Router ────────────────────────────────────────────────────────────────────
 if st.session_state.algo_id is None:
     page_home()
+elif st.session_state.algo_id == "chat":
+    page_chat()
 else:
     page_algorithm(st.session_state.algo_id)

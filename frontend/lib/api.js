@@ -8,6 +8,19 @@ async function get(path) {
   return res.json();
 }
 
+async function post(path, body) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || `API 錯誤 ${res.status}: ${path}`);
+  }
+  return res.json();
+}
+
 export const api = {
   algorithms: () => get("/api/algorithms"),
   algorithm: (id) => get(`/api/algorithms/${id}`),
@@ -15,6 +28,7 @@ export const api = {
   learningPath: () => get("/api/learning-path"),
   quiz: (id) => get(`/api/algorithms/${id}/quiz`),
   params: (id) => get(`/api/algorithms/${id}/params`),
+  chat: (body) => post("/api/chat", body),
 };
 
 // 每個演算法配色對應的 [淺底, 主色, 深字]

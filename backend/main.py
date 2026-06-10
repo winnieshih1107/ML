@@ -12,9 +12,21 @@
   uvicorn main:app --reload --port 8000
 """
 
+import os
+import time
+
+_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+if os.path.exists(_env_path):
+    with open(_env_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith("#") and "=" in _line:
+                _k, _v = _line.split("=", 1)
+                os.environ.setdefault(_k.strip(), _v.strip())
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from google import genai as google_genai
 
 import data
 import playground as pg
@@ -25,7 +37,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# 允許 Next.js 前端(預設跑在 3000 埠)跨來源存取
+# 開發環境允許所有來源（前端可能跑在 3000、5000 等任意埠）
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -88,6 +100,55 @@ def get_params(algo_id: int):
     if not defs:
         raise HTTPException(status_code=404, detail="找不到參數定義")
     return defs
+
+
+_CHAT_SYSTEM = """你是「十大機器學習演算法」學習平台的 AI 助教。本平台涵蓋以下十種演算法：
+線性迴歸、邏輯迴歸、決策樹、隨機森林、支援向量機 (SVM)、K-近鄰演算法 (KNN)、K-Means 分群、主成分分析 (PCA)、梯度提升 (Gradient Boosting / XGBoost)、神經網路。
+
+你的職責：
+- 用繁體中文回答機器學習相關問題，解釋原理、優缺點與使用場景。
+- 回答簡潔清晰，適合初學者至中階學習者。
+- 若問題與機器學習無關，請友善地引導回 ML 主題。"""
+
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class ChatRequest(BaseModel):
+    messages: list[ChatMessage]
+
+
+@app.post("/api/chat")
+def chat(body: ChatRequest):
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY 未設定，請在後端設定環境變數。")
+
+    client = google_genai.Client(api_key=api_key)
+    messages = body.messages
+    contents = [
+        {"role": "user" if m.role == "user" else "model",
+         "parts": [{"text": m.content}]}
+        for m in messages
+    ]
+    for model in ["gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"]:
+        for attempt in range(2):
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=contents,
+                    config={"system_instruction": _CHAT_SYSTEM},
+                )
+                return {"reply": response.text}
+            except Exception as e:
+                err = str(e)
+                if "503" in err or "UNAVAILABLE" in err or "429" in err:
+                    time.sleep(2)
+                    continue
+                raise HTTPException(status_code=502, detail=err)
+    raise HTTPException(status_code=503, detail="AI 服務暫時繁忙，請稍後再試。")
 
 
 class PlaygroundRequest(BaseModel):

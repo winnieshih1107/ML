@@ -1,5 +1,6 @@
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
+import ChatAssistant from "@/components/ChatAssistant";
 
 export const metadata = {
   title: "ML Platform — 十大機器學習演算法",
@@ -19,7 +20,10 @@ export default function RootLayout({ children }) {
         }} />
       </head>
       <body className="font-sans">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <ChatAssistant />
+        </ThemeProvider>
       </body>
     </html>
   );

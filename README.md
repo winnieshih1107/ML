@@ -12,11 +12,14 @@
 
 ## ✨ 功能特色
 
-- **十大演算法總覽** — 卡片網格、比較總覽表、初學者建議學習順序
-- **互動 Playground** — 即時調整參數，視覺化決策邊界與模型評估指標
-- **學習指引** — 核心概念、運作原理、優缺點、應用場景
-- **程式片段** — scikit-learn / PyTorch 範例程式碼
-- **小測驗** — 每個演算法 3 題，即時批改
+| 功能 | 說明 |
+|------|------|
+| 🏠 十大演算法總覽 | 卡片網格、比較總覽表、初學者建議學習順序 |
+| ▷ 互動 Playground | 即時調整參數，視覺化決策邊界與模型評估指標 |
+| □ 學習指引 | 核心概念、運作原理、優缺點、應用場景 |
+| >_ 程式片段 | scikit-learn / PyTorch 範例程式碼 |
+| 📝 小測驗 | 每個演算法 3 題，即時批改，顯示最終成績 |
+| 🤖 AI 助教 | Gemini 2.5 Flash 聊天，即時回答機器學習問題 |
 
 ## 📁 專案結構
 
@@ -43,7 +46,7 @@ ML/
 
 直接開啟 👉 **[https://wi0608.streamlit.app](https://wi0608.streamlit.app)**
 
-不需要安裝任何套件，瀏覽器即可使用全部功能。
+不需要安裝任何套件，瀏覽器即可使用全部功能，包含左側 **🤖 AI 助教**聊天。
 
 ### 本地執行 Streamlit
 
@@ -51,6 +54,17 @@ ML/
 pip install -r requirements.txt
 streamlit run streamlit_app.py
 ```
+
+### 設定 AI 助教 API Key（部署後）
+
+1. 前往 [Streamlit Community Cloud](https://share.streamlit.io/)，點選應用程式旁「**⋮**」→「**Settings**」
+2. 左側點「**Secrets**」，貼入以下內容後點「**Save**」：
+
+```toml
+GEMINI_API_KEY = "你的-gemini-api-key"
+```
+
+> 取得免費 API Key：[https://aistudio.google.com/apikey](https://aistudio.google.com/apikey)
 
 ## 💻 本地完整版（FastAPI + Next.js）
 
@@ -102,6 +116,8 @@ NEXT_PUBLIC_API_BASE=http://localhost:8000
 | GET | `/api/algorithms` | 十大演算法總覽卡片清單 |
 | GET | `/api/algorithms/{id}` | 單一演算法完整詳細（1–10） |
 | GET | `/api/algorithms/{id}/playground` | Playground 執行結果 |
+| GET | `/api/algorithms/{id}/quiz` | 小測驗題目 |
+| POST | `/api/chat` | AI 助教聊天（需 GEMINI_API_KEY） |
 | GET | `/api/comparison` | 比較總覽表 |
 | GET | `/api/learning-path` | 初學者建議學習順序 |
 | GET | `/docs` | FastAPI 自動產生的 API 文件 |
